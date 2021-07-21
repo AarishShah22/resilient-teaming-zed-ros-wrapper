@@ -6,17 +6,21 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <math.h>
 #include<nav_msgs/Odometry.h>
+//for keyboard operations
+#include <unistd.h>
+#include <stdio.h>
+#include <map>
 
 #define INPUTLIMIT 1000
 #define MAXSPEED 0.6    //[m/s]
 
 // Global variables 
-float threshold = 0.1; //[m]
+float threshold = 0.05; //[m]
 float speed = 0.25; //[m/s]
-float Kd = 0.2;//speed/threshold;
-float Ka = 0.16;//2.4;
-float Kb = -0.6;
-float speed_lim = 800;
+float Kd = 0.5;//0.2;//speed/threshold;
+float Ka = 0.24; //0.16;
+float Kb = -0.6; // not in use
+float speed_lim = 500;//800;
 
 struct rob_state_t{
     float curr_x;
@@ -33,15 +37,54 @@ struct rob_state_t{
 
 rob_state_t rob_state;
 
+
+//Map for speed keys
+int keySpeed = 400;
+char key(' ');
+std::map<char, std::vector<int>> moveBindings
+{
+    {'w', {keySpeed, keySpeed}},
+    {'s', {-keySpeed, -keySpeed}},
+    {'a', {-keySpeed, keySpeed}},
+    {'d', {keySpeed, -keySpeed}}
+};
+
+//non-binding keyboard input reader
+int getch(void){
+    int ch;
+    struct termios oldt;
+    struct termios newt;
+
+    //store old settings, and copy to new settings
+    newt.c_lflag &= ~(ICANON | ECHO);
+    newt.c_iflag |= IGNBRK;
+    newt.c_iflag &= ~(INLCR | ICRNL | IXON | IXOFF);
+    newt.c_lflag &= ~(ICANON | ECHO | ECHOK | ECHOE | ECHONL | ISIG | IEXTEN);
+    newt.c_cc[VMIN] = 1;
+    newt.c_cc[VTIME] = 0;
+    tcsetattr(fileno(stdin), TCSANOW, &newt);
+
+    // Get the current character
+    ch = getchar();
+
+    // Reapply old settings
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+    return ch;
+}
+
 using namespace std;     // belongs to blocking input mode
 
-//functions
+/* **********functions********** */
+
+//limit inputs to a predefined value
 float checkLimits(float val, float limit){
     val = val > limit ? limit: val;
     val = val < -limit ? -limit : val;
     return val;
 }
 
+//-pi to pi coordinate system
 float wrapToTwoPi(float angle){
     while(angle > M_PI) {
 		angle -= 2*M_PI;
@@ -51,6 +94,8 @@ float wrapToTwoPi(float angle){
 	}
     return angle;
 }
+
+//calculate speed to achieve target pose
 void getSpeed(void){
     //converts target position to left and right wheel speed commands
     float l_wheel = 0;
@@ -76,6 +121,7 @@ void getSpeed(void){
     rob_state.r_vel = r_wheel;
 }
 
+//check if near pose
 bool withinTargetRange(void){
     //check if robot is close to target pose with 0.1 threshold
     float delta_x = rob_state.target_x - rob_state.curr_x;
@@ -90,9 +136,11 @@ bool withinTargetRange(void){
     return distance < threshold;
 }
 
+//read target pose from terminal
 void getVals(void){
     float x_pose;
     float y_pose;
+    printf("\n");
     cout << "Input target x and target y location in meters" << endl;
     if(cin >> x_pose >> y_pose){
         cout << "Processing pose [m] x:" << x_pose << ", y:" << y_pose << endl;
@@ -102,6 +150,7 @@ void getVals(void){
     }
 }
 
+//read current odom value
 void odomCallback(const nav_msgs::Odometry&msg){
     rob_state.curr_x = (float) msg.pose.pose.position.x;
     rob_state.curr_y = (float) msg.pose.pose.position.y;
@@ -126,27 +175,47 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-        int command;
-        cout << "Duty cycle command: 1, Pose command: 2"<<endl;
+        int command = 0;
+        printf("\nKeyboard command: 1, Pose command: 2\n\r");
         cin >> command;
         if(command == 1){
-            cout << "Input -1000 to 1000 for wheel 1 and wheel 2" << endl;
-            cin >> rob_state.l_vel >> rob_state.r_vel;
-            msg.data = {rob_state.l_vel, rob_state.r_vel};
-            pub.publish(msg);
+            printf("'w': Forward \n'a': Turn left \n's':Backward \n'd': Turn right\n");
+            while(ros::ok()){
 
-            ros::spinOnce();
-            loop_rate.sleep();
+                //read terminal inputs
+                key = getch();
+                //check if key corresponds to map
+                if(moveBindings.count(key) == 1){
+                    rob_state.l_vel = moveBindings[key][0];
+                    rob_state.r_vel = moveBindings[key][1];
+                }
+                else{
+                    rob_state.l_vel = 0;
+                    rob_state.r_vel = 0;
+                    // exit if ctrl-C is pressed
+                    if (key == '\x03'){
+                        printf("breaking out\r");
+                        break;
+                    }
+                }
+
+                msg.data = {rob_state.l_vel, rob_state.r_vel};
+                pub.publish(msg);
+
+                ros::spinOnce();
+                loop_rate.sleep();
+            }
         }
+
         else if(command == 2){
             getVals();
             while(ros::ok){
                 getSpeed();
-                // if (withinTargetRange()){
-                //     msg.data = {0.0, 0.0};
-                //     pub.publish(msg);
-                //     break;
-                // }
+                if (withinTargetRange()){
+                    msg.data = {0.0, 0.0};
+                    pub.publish(msg);
+                    break;
+                }
                 msg.data = {rob_state.l_vel, rob_state.r_vel};
                 pub.publish(msg);
 

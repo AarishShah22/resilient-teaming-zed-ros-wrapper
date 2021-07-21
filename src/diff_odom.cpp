@@ -98,7 +98,6 @@ private:
 
 Odometry_calc::~Odometry_calc(){
 	std::ofstream file_writter;
-	// file_writter.open("example.csv");
 	file_writter.open("/home/mobilebot/Desktop/example.csv");
 	for (size_t i = 0; i < x_array_.size(); i++) {
 		file_writter << x_array_[i] << "," << y_array_[i] << "\n";
