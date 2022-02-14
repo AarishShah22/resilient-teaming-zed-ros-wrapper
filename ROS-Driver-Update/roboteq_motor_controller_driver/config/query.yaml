@@ -13,6 +13,7 @@ queryH:
  battery_amps : ?BA
  power : ?P          
  fault_flag : ?FF  
+ encoder_count : ?C
 # motor_amps2 : ?MA
 # motor_command2 : ?FM
 # hall_count2 : ?FM

@@ -19,7 +19,6 @@
 #include <roboteq_motor_controller_driver/config_srv.h>
 #include <roboteq_motor_controller_driver/command_srv.h>
 #include <roboteq_motor_controller_driver/maintenance_srv.h>
-#include <std_msgs/Float32MultiArray.h>	//new
 
 class RoboteqDriver
 {
@@ -42,7 +41,7 @@ private:
 	std::string port;
 	int32_t baud;
 	ros::Publisher read_publisher;
-	ros::Subscriber cmd_vel_sub;	//comment out if not using subscriber
+	ros::Subscriber cmd_vel_sub;
 
 	int channel_number_1;
 	int channel_number_2;
@@ -56,8 +55,7 @@ private:
 
 		nh.getParam("port", port);
 		nh.getParam("baud", baud);
-		// cmd_vel_sub = nh.subscribe("/cmd_vel", 10, &RoboteqDriver::cmd_vel_callback, this);	//comment out if not using subscriber
-		cmd_vel_sub = nh.subscribe("/key", 10, &RoboteqDriver::cmd_vel_callback, this);
+		cmd_vel_sub = nh.subscribe("/cmd_vel", 10, &RoboteqDriver::cmd_vel_callback, this);
 
 		connect();
 	}
@@ -94,27 +92,18 @@ private:
 		run();
 	}
 
-	// comment out if not using subscriber
-	//void cmd_vel_callback(const geometry_msgs::Twist &msg)
-	void cmd_vel_callback(const std_msgs::Float32MultiArray &msg)
+	void cmd_vel_callback(const geometry_msgs::Twist &msg)
 	{
-		double c1 = msg.data[0];
-		double c2 = msg.data[1];
 		std::stringstream cmd_sub;
-		// cmd_sub << "!G 1"
-		// 		<< " " << msg.linear.x << "_"
-		// 		<< "!G 2"
-		// 		<< " " << msg.angular.z << "_";
 		cmd_sub << "!G 1"
-				<< " " << c1 << "_"
+				<< " " << msg.linear.x << "_"
 				<< "!G 2"
-				<< " " << c2 << "_";
+				<< " " << msg.angular.z << "_";
 
 		ser.write(cmd_sub.str());
 		ser.flush();
 		ROS_INFO_STREAM(cmd_sub.str());
 	}
-	// comment out end
 
 	ros::NodeHandle n;
 	ros::ServiceServer configsrv;
@@ -181,14 +170,6 @@ private:
 		std::map<Key, Val> map_sH;
 		nh.getParam("queryH", map_sH);
 
-		// //testing - created a constant speed -> not updated
-		// std::stringstream cmd_sub;
-		// cmd_sub << "!G 1"
-		// 		<< " " << 300 << "_"
-		// 		<< "!G 2"
-		// 		<< " " << 100 << "_";
-		// //end of testing
-
 		std::stringstream ss0;
 		std::stringstream ss1;
 		std::stringstream ss2;
@@ -231,11 +212,7 @@ private:
 			ros::spinOnce();
 			if (ser.available())
 			{
-				// //testing - write to the controller predefined speeds
-				// ser.write(cmd_sub.str());
-				// ser.flush();
-				// ROS_INFO_STREAM(cmd_sub.str());
-				// //testing done
+
 				std_msgs::String result;
 				result.data = ser.read(ser.available());
 

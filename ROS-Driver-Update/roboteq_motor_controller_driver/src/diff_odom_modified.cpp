@@ -72,6 +72,9 @@ private:
 	void rightencoderCb(const roboteq_motor_controller_driver::channel_values& right_ticks); 	
 	void init_variables();
 
+	
+
+
 	void update();
 };
 
@@ -82,12 +85,9 @@ Odometry_calc::Odometry_calc(){
 
 	ROS_INFO("Started odometry computing node");
 
-	// l_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::leftencoderCb, this);
+	l_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::leftencoderCb, this);
 	
-	// r_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::rightencoderCb, this);
-	l_wheel_sub = n.subscribe("/encoder_count",1000, &Odometry_calc::leftencoderCb, this);
-	
-	r_wheel_sub = n.subscribe("/encoder_count",1000, &Odometry_calc::rightencoderCb, this);
+	r_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::rightencoderCb, this);
 
 
   	odom_pub = n.advertise<nav_msgs::Odometry>("odom1", 50);   
@@ -100,7 +100,7 @@ Odometry_calc::Odometry_calc(){
 
 void Odometry_calc::init_variables()
 {
-	//unit [m]
+
 
 	prev_lencoder = 0;
 	prev_rencoder = 0;
@@ -115,14 +115,13 @@ void Odometry_calc::init_variables()
 	encoder_max =  65536;
 
 	rate = 10;
-	
-	double wheel_diam = 0.1524;
-	double ticks_revolution = 1920; //568;
-	double distance_rev = 3.1415926 * wheel_diam;
-	ticks_meter = ticks_revolution / distance_rev;
-	//ticks_meter = 50;
 
-	base_width = 0.35;	
+	ticks_meter = 50;
+
+	base_width = 0.3;
+
+	
+	
 
 	encoder_low_wrap = ((encoder_max - encoder_min) * 0.3) + encoder_min ;
 	encoder_high_wrap = ((encoder_max - encoder_min) * 0.7) + encoder_min ;
@@ -133,7 +132,7 @@ void Odometry_calc::init_variables()
 	then = ros::Time::now();
 
 
-	enc_left = 0;//10;
+	enc_left = 10;
 	enc_right = 0;
 
 	dx = 0;
@@ -181,13 +180,9 @@ void Odometry_calc::update(){
 
  // 	        ROS_INFO_STREAM("elapsed =" << elapsed);
 
-		// //left is most recent encoder count, enc_left is previous count
-		// ROS_INFO_STREAM("left:" << left << " right:" << right);
-		// ROS_INFO_STREAM("prel:" << enc_left << " prevr:" << enc_right);
-
-		//unsure why original only had left	
-		// if(enc_left == 0){
-		if(enc_left == 0 && enc_right == 0){
+		
+		
+		if(enc_left == 0){
 			d_left = 0;
 			d_right = 0;
 		}
@@ -202,8 +197,7 @@ void Odometry_calc::update(){
 
 		d = (d_left + d_right ) / 2.0;
 
-	// uncomment usually
-		// ROS_INFO_STREAM(d_left << " : " << d_right);
+		ROS_INFO_STREAM(d_left << " : " << d_right);
 
 
 		th = ( d_right - d_left ) / base_width;
@@ -273,11 +267,9 @@ void Odometry_calc::update(){
 
 	    	    then = now;
 
-		    // ROS_INFO_STREAM("dx =" << x_final);
+//		    ROS_INFO_STREAM("dx =" << x_final);
 
-		    // ROS_INFO_STREAM("dy =" << y_final);
-			//for testing
-			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final << " th=" << theta_final);
+//		    ROS_INFO_STREAM("dy =" << y_final);
 
 	            ros::spinOnce();
 
@@ -300,12 +292,12 @@ void Odometry_calc::leftencoderCb(const roboteq_motor_controller_driver::channel
 
 {
 
-	// ROS_INFO_STREAM("Left tick" << left_ticks->data);
-	double enc = left_ticks.value[0];
-	//for testing
-	//ROS_INFO_STREAM("left" << left_ticks);
-	//ROS_INFO_STREAM("Left ticks pulse: " << enc);
-	//end tetsing
+// ROS_INFO_STREAM("Left tick" << left_ticks->data);
+// ROS_INFO_STREAM("Left tick" << left_ticks.value[1]);
+	double enc = left_ticks.value[1];
+	
+
+
 	if((enc < encoder_low_wrap) && (prev_lencoder > encoder_high_wrap))
 	{
 		
@@ -324,7 +316,7 @@ void Odometry_calc::leftencoderCb(const roboteq_motor_controller_driver::channel
 
 	prev_lencoder = enc;
 
-	//ROS_INFO_STREAM("Left " << left);
+//	ROS_INFO_STREAM("Left " << left);
 
 }
 
@@ -338,8 +330,8 @@ void Odometry_calc::rightencoderCb(const roboteq_motor_controller_driver::channe
 
 // ROS_INFO_STREAM("Right tick" << right_ticks->data);
 
-	double enc = right_ticks.value[1];
-	//ROS_INFO_STREAM("Right ticks pulse: " << enc);
+
+	double enc = right_ticks.value[2];
 	
 	if((enc < encoder_low_wrap) && (prev_lencoder > encoder_high_wrap))
 	{
@@ -360,6 +352,7 @@ void Odometry_calc::rightencoderCb(const roboteq_motor_controller_driver::channe
 	prev_rencoder = enc;
 
 //	ROS_INFO_STREAM("Right " << right);
+
 
 
 }
