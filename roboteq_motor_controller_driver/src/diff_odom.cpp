@@ -273,11 +273,8 @@ void Odometry_calc::update(){
 
 	    	    then = now;
 
-		    // ROS_INFO_STREAM("dx =" << x_final);
-
-		    // ROS_INFO_STREAM("dy =" << y_final);
 			//for testing
-			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final << " th=" << theta_final);
+			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final);
 
 	            ros::spinOnce();
 

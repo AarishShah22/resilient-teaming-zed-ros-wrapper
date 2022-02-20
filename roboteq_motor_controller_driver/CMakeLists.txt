@@ -195,6 +195,12 @@ target_link_libraries(diff_odom
   ${catkin_LIBRARIES}
 )
 
+add_executable(keyBoardReader_node 
+ src/keyBoardReader.cpp)
+
+target_link_libraries(keyBoardReader_node
+  ${catkin_LIBRARIES}
+)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
