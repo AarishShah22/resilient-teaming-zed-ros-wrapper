@@ -25,16 +25,18 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-        ros::spinOnce();
         if(std::cin >> inCh1 >> inCh2){
             std::cout << "Read Ch1: " << inCh1 << " Ch2: " << inCh2 << std::endl; 
             input[0] = inCh1;
             input[1] = inCh2;
         }
+        
         msg.data = {input[0], input[1]};
-
         pub.publish(msg);
+
+        ros::spinOnce();
         loop_rate.sleep();
     }
     ros::waitForShutdown();
+    return 0;
 }

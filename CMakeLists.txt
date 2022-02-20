@@ -195,10 +195,10 @@ target_link_libraries(diff_odom
   ${catkin_LIBRARIES}
 )
 
-add_executable(keyBoardReader_node 
- src/keyBoardReader.cpp)
+add_executable(controller_node 
+ src/controller.cpp)
 
-target_link_libraries(keyBoardReader_node
+target_link_libraries(controller_node
   ${catkin_LIBRARIES}
 )
 
