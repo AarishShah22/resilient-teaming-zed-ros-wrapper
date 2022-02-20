@@ -7,20 +7,44 @@
  -If firmware is not the latest one then please update it with the latest one available on Roboteq website 
   or contact "techsupport.roboteq@mail.nidec.com".
 ```
-This repository contains the ROS driver for Roboteq controllers. The package requires ROS system to be installed properly to your system  and proper connection of Roboteq controller. For detailed controller setup instructions, please refer to our documentation [here](https://www.roboteq.com/index.php/docman/motor-controllers-documents-and-files/documentation/user-manual/272-roboteq-controllers-user-manual-v17/file).
+This file outlines the instructions for running the current development of the mobile robot platform. This repository contains the ROS driver for Roboteq controllers and Robot controller. The package requires ROS Melodic to be installed properly to your system and proper serial connection of Roboteq controller. 
 
-First, clone this repository to catkin_ws/src 
+First, clone this repository and the serial repository to catkin_ws/src:
 ```
-git clone https://github.com/Roboteq-Inc/ROS-Driver.git
+git clone https://gitlab.com/barton-research-group/resilient-teaming/ros-driver.git
+git clone https://github.com/wjwwood/serial.git 
 ```
+
+To unlock USB terminal connected to the motor driver, run command:
+
+```
+sudo chmod 666 /dev/ttyACM0
+```
+
+Program currently allows user to enter speed duty cycle commands into the terminal in the form 'rpm%_Motor1 rpm%_Motor2'
+Example for 50% of max rpm input for both wheels: '500 500'
+Max rpm of this robot is 74rpm
 
 The `Roboteq motor controller driver` is the package for the Roboteq ROS-driver. Make sure not to change package name as it will change the definition in the Cmake and Package files. Open new terminal and copy these steps -
 
 ```
 cd catkin_ws/
+catkin_make
 source devel/setup.bash
+```
+Within terminal 1:
+```
 roslaunch roboteq_motor_controller_driver driver.launch
 ```
+Within terminal 2:
+```
+rosrun roboteq_motor_controller_driver keyBoardReader_node
+```
+(Optional) Currently odometry is not integrated with the main program. To view program performance, run the following in terminal 3:
+```
+rosrun roboteq_motor_controller_driver diff_odom.launch
+```
+
 
 The roboteq driver is designed to be dynamic and users can publish the controller queries as per their requirements. The publishing queries is not limited to any value. By default total 9 queries are published by launching this driver. Users can change or add queries in configuration file. For that go to config/query.yaml
 
