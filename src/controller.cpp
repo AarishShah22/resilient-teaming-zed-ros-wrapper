@@ -5,27 +5,40 @@
 #include <ros/ros.h>
 #include <std_msgs/Float32MultiArray.h>
 
+#define INPUTLIMIT 1000
+#define MAXSPEED 0.6    //[m/s]
+
 using namespace std;     // belongs to blocking input mode
 
 //functions
-int checkLimits(int val){
-    val = val>1000 ? 1000 : val;
-    val = val<-1000 ? -1000 : val;
+float checkLimits(float val, float limit){
+    val = val > limit ? limit: val;
+    val = val < -limit ? -limit : val;
     return val;
 }
 
 int* getVals(int* input){
-    int inCh1 = 0;
-    int inCh2 = 0;
+    //input format: turning velocity, forward velocity
+    float inCh1 = 0;
+    float inCh2 = 0;
+    float l_wheel = 0;
+    float r_wheel = 0;
+
     if(std::cin >> inCh1 >> inCh2){
-            inCh1 = checkLimits(inCh1);
-            inCh2 = checkLimits(inCh2);
-            std::cout << "Sending Ch1: " << inCh1 << " Ch2: " << inCh2 << std::endl; 
-            *input = inCh1;
-            *(input + 1) = inCh2;
+            inCh1 = checkLimits(inCh1, MAXSPEED);
+            inCh2 = checkLimits(inCh2, MAXSPEED);
+            std::cout << "Processing fwd_speed: " << inCh1 << " ang_speed: " << inCh2 << std::endl; 
+            l_wheel = 1000 * (inCh1 + inCh2) / MAXSPEED;
+            r_wheel = 1000 * (inCh1 - inCh2) / MAXSPEED;
+            l_wheel = floor(checkLimits(l_wheel, INPUTLIMIT));
+            r_wheel = floor(checkLimits(r_wheel, INPUTLIMIT));
+            cout << "Sending, Ch1: " << l_wheel << " Ch2: " << r_wheel << endl;
+            *input = l_wheel;
+            *(input + 1) = r_wheel;
         }
     return input;
 }
+
 
 //main
 int main(int argc, char **argv)
