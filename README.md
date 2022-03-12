@@ -42,7 +42,7 @@ rosrun roboteq_motor_controller_driver controller_node
 ```
 (Optional) Currently odometry is not integrated with the main program. To view program performance, run the following in terminal 3:
 ```
-rosrun roboteq_motor_controller_driver diff_odom.launch
+roslaunch roboteq_motor_controller_driver diff_odom.launch
 ```
 
 
