@@ -32,7 +32,7 @@ float checkLimits(float val, float limit){
     return val;
 }
 
-float wrapToPi(float angle){
+float wrapToTwoPi(float angle){
     if(angle < 0){
         for(; angle < 0; angle+=M_2_PI);
     }
@@ -43,94 +43,62 @@ float wrapToPi(float angle){
 }
 void getSpeed(void){
     //converts target position to left and right wheel speed commands
-
-    // float delta_x = rob_state.target_x - rob_state.curr_x;
-    // float delta_y = rob_state.target_y - rob_state.curr_y;
-
     float l_wheel = 0;
     float r_wheel = 0;
+    float delta_x = rob_state.target_x - rob_state.curr_x;
+    float delta_y = rob_state.target_y - rob_state.curr_y;
+    float distance = sqrtf(powf(delta_x, 2.0) + powf(delta_y, 2.0));
+    float delta_theta = atan2(delta_y, delta_x) - rob_state.curr_theta;
+    delta_theta = wrapToTwoPi(delta_theta);
+    float Kd = 1;
+    float Ka = 1;
+    float speed_lim = 500;
+
+    rob_state.fwd_vel = Kd * distance;
+    rob_state.ang_vel = Ka * delta_theta;
     cout << "Processing fwd_speed: " << rob_state.fwd_vel << " ang_speed: " << rob_state.ang_vel << endl; 
-            l_wheel = 1000 * (rob_state.fwd_vel + rob_state.ang_vel) / MAXSPEED;
-            r_wheel = 1000 * (rob_state.fwd_vel - rob_state.ang_vel) / MAXSPEED;
-            l_wheel = floor(checkLimits(l_wheel, INPUTLIMIT));
-            r_wheel = floor(checkLimits(r_wheel, INPUTLIMIT));
-            cout << "Sending, Ch1: " << l_wheel << " Ch2: " << r_wheel << endl;
-            rob_state.l_vel = l_wheel;
-            rob_state.r_vel = r_wheel;
+    l_wheel = 1000 * (rob_state.fwd_vel + rob_state.ang_vel) / MAXSPEED;
+    r_wheel = 1000 * (rob_state.fwd_vel - rob_state.ang_vel) / MAXSPEED;
+    l_wheel = floor(checkLimits(l_wheel, INPUTLIMIT));
+    r_wheel = floor(checkLimits(r_wheel, INPUTLIMIT));
+    l_wheel = l_wheel > speed_lim ? speed_lim : l_wheel;
+    r_wheel = r_wheel > speed_lim ? speed_lim : r_wheel;
+    cout << "Sending, Ch1: " << l_wheel << " Ch2: " << r_wheel << endl;
+    rob_state.l_vel = l_wheel;
+    rob_state.r_vel = r_wheel;
 }
 
-// bool withinTargetRange(void){
-//     //check if robot is close to target pose with 0.1 threshold
-//     float threshold = 0.1; //[m]
-//     float delta_x = rob_state.target_x - rob_state.curr_x;
-//     float delta_y = rob_state.target_y - rob_state.curr_y;
-//     float distance = sqrtf(powf(delta_x, 2.0) + powf(delta_y, 2.0));
-//     if(distance < threshold){
-//         cout << "Arrived" << endl;
-//         printf("\n");
-//     }
-//     return distance < threshold;
-// }
+bool withinTargetRange(void){
+    //check if robot is close to target pose with 0.1 threshold
+    float threshold = 0.1; //[m]
+    float delta_x = rob_state.target_x - rob_state.curr_x;
+    float delta_y = rob_state.target_y - rob_state.curr_y;
+    float distance = sqrtf(powf(delta_x, 2.0) + powf(delta_y, 2.0));
+    if(distance < threshold){
+        cout << "Arrived" << endl;
+        printf("\n");
+    }
+    return distance < threshold;
+}
 
 void getVals(void){
-    // float x_pose;
-    // float y_pose;
-    // cout << "Input target x and target y location in meters" << endl;
-    // if(cin >> x_pose >> y_pose){
-    //     cout << "Processing pose [m] x:" << x_pose << ", y:" << y_pose << endl;
-    //     rob_state.target_x = x_pose;
-    //     rob_state.target_y = y_pose;
-    //     rob_state.target_theta = 0.0;
-    //     printf("here");
-    //     while(!withinTargetRange()){
-    //         printf("within\n");
-    //         getSpeed();
-    //         printf("within2\n");
-    //     }
-    //     printf("end\n");
-    // }
-
-    float inCh1 = 0;
-    float inCh2 = 0;
-    cout << "Input fwd and ang speed from -0.6 t0 0.6" << endl;
-    if(cin >> inCh1 >> inCh2){
-            inCh1 = checkLimits(inCh1, MAXSPEED);
-            inCh2 = checkLimits(inCh2, MAXSPEED);
-            rob_state.fwd_vel = inCh1;
-            rob_state.ang_vel = inCh2;
-            getSpeed();
-        }
+    float x_pose;
+    float y_pose;
+    cout << "Input target x and target y location in meters" << endl;
+    if(cin >> x_pose >> y_pose){
+        cout << "Processing pose [m] x:" << x_pose << ", y:" << y_pose << endl;
+        rob_state.target_x = x_pose;
+        rob_state.target_y = y_pose;
+        rob_state.target_theta = 0.0;
+    }
 }
 
 void odomCallback(const nav_msgs::Odometry&msg){
     rob_state.curr_x = (float) msg.pose.pose.position.x;
     rob_state.curr_y = (float) msg.pose.pose.position.y;
-    rob_state.curr_theta = 0.0;
+    rob_state.curr_theta = (float)asin(2 * msg.pose.pose.orientation.z * msg.pose.pose.orientation.w);
     // cout << rob_state.curr_x << " y:"<<rob_state.curr_y << endl;
 }
-
-// int* getVals(int* input){
-//     //input format: turning velocity, forward velocity
-//     float inCh1 = 0;
-//     float inCh2 = 0;
-//     float l_wheel = 0;
-//     float r_wheel = 0;
-
-//     if(std::cin >> inCh1 >> inCh2){
-//             inCh1 = checkLimits(inCh1, MAXSPEED);
-//             inCh2 = checkLimits(inCh2, MAXSPEED);
-//             std::cout << "Processing fwd_speed: " << inCh1 << " ang_speed: " << inCh2 << std::endl; 
-//             l_wheel = 1000 * (inCh1 + inCh2) / MAXSPEED;
-//             r_wheel = 1000 * (inCh1 - inCh2) / MAXSPEED;
-//             l_wheel = floor(checkLimits(l_wheel, INPUTLIMIT));
-//             r_wheel = floor(checkLimits(r_wheel, INPUTLIMIT));
-//             cout << "Sending, Ch1: " << l_wheel << " Ch2: " << r_wheel << endl;
-//             *input = l_wheel;
-//             *(input + 1) = r_wheel;
-//         }
-//     return input;
-// }
-
 
 //main
 int main(int argc, char **argv)
@@ -141,7 +109,7 @@ int main(int argc, char **argv)
 
     ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("/key", 1000);
     ros::Subscriber sub = n.subscribe("odom1", 50, odomCallback);
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(50);
     int *input;
     std_msgs::Float32MultiArray msg;
     msg.data.resize(2);
@@ -149,14 +117,29 @@ int main(int argc, char **argv)
 
     while (ros::ok())
     {
-        // int* ninput = getVals(input);   
-        // msg.data = {*ninput, *(ninput+1)};
-        getVals();
-        msg.data = {rob_state.l_vel, rob_state.r_vel};
-        pub.publish(msg);
+        int command;
+        cout << "Duty cycle command: 1, Pose command: 2"<<endl;
+        cin >> command;
+        if(command == 1){
+            cout << "Input -1000 to 1000 for wheel 1 and wheel 2" << endl;
+            cin >> rob_state.l_vel >> rob_state.r_vel;
+            msg.data = {rob_state.l_vel, rob_state.r_vel};
+            pub.publish(msg);
 
-        ros::spinOnce();
-        loop_rate.sleep();
+            ros::spinOnce();
+            loop_rate.sleep();
+        }
+        else if(command == 2){
+            getVals();
+            while(ros::ok && !withinTargetRange()){
+                getSpeed();
+                msg.data = {rob_state.l_vel, rob_state.r_vel};
+                pub.publish(msg);
+
+                ros::spinOnce();
+                loop_rate.sleep();
+            }
+        }
     }
     ros::waitForShutdown();
     return 0;

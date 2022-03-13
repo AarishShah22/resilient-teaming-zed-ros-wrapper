@@ -6,7 +6,9 @@
 #include <nav_msgs/Odometry.h>
 #include <math.h>
 #include <roboteq_motor_controller_driver/roboteq_motor_controller_driver_node.h>
-
+//for csv
+#include<iostream>
+#include <fstream>
 
 
 class Odometry_calc{
@@ -15,7 +17,6 @@ public:
 	Odometry_calc();
 
 	void spin();
-
 
 private:
 	ros::NodeHandle n;
@@ -150,17 +151,13 @@ void Odometry_calc::init_variables()
 
 //Spin function
 void Odometry_calc::spin(){
-
      ros::Rate loop_rate(rate);
 
      while (ros::ok())
 	{
 		update();
 		loop_rate.sleep();
-	
 	}
-
-
 }
 
 //Update function
@@ -274,8 +271,8 @@ void Odometry_calc::update(){
 	    	    then = now;
 
 			//for testing
-			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final);
-
+			float tempTestTheta = (float)asin(2 * odom_quat.z * odom_quat.w);
+			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final << " th=" << tempTestTheta);
 	            ros::spinOnce();
 
 
@@ -370,7 +367,6 @@ int main(int argc, char **argv)
 	ros::init(argc, argv,"diff_odom");
 	Odometry_calc obj;
 	obj.spin();
-
 
 	return 0;
 
