@@ -10,6 +10,14 @@
 #define INPUTLIMIT 1000
 #define MAXSPEED 0.6    //[m/s]
 
+// Global variables 
+float threshold = 0.1; //[m]
+float speed = 0.25; //[m/s]
+float Kd = speed/threshold;
+float Ka = 2.4;
+float Kb = -0.6;
+float speed_lim = 800;
+
 struct rob_state_t{
     float curr_x;
     float curr_y;
@@ -34,10 +42,10 @@ float checkLimits(float val, float limit){
 
 float wrapToTwoPi(float angle){
     if(angle < 0){
-        for(; angle < 0; angle+=M_2_PI);
+        for(; angle < 0; angle+=2*M_PI);
     }
-    else if(angle > M_2_PI){
-        for(; angle > M_2_PI; angle -= M_2_PI);
+    else if(angle > 2*M_PI){
+        for(; angle > M_2_PI; angle -= 2*M_PI);
     }
     return angle;
 }
@@ -48,21 +56,19 @@ void getSpeed(void){
     float delta_x = rob_state.target_x - rob_state.curr_x;
     float delta_y = rob_state.target_y - rob_state.curr_y;
     float distance = sqrtf(powf(delta_x, 2.0) + powf(delta_y, 2.0));
-    float delta_theta = atan2(delta_y, delta_x) - rob_state.curr_theta;
-    delta_theta = wrapToTwoPi(delta_theta);
-    float Kd = 1;
-    float Ka = 1;
-    float speed_lim = 500;
+    float alpha = wrapToTwoPi(atan2(delta_y, delta_x) - rob_state.curr_theta);
+    float beta = wrapToTwoPi(rob_state.target_theta - rob_state.curr_theta);
 
     rob_state.fwd_vel = Kd * distance;
-    rob_state.ang_vel = Ka * delta_theta;
+    rob_state.ang_vel = Ka * alpha + Kb * beta;
+
     cout << "Processing fwd_speed: " << rob_state.fwd_vel << " ang_speed: " << rob_state.ang_vel << endl; 
     l_wheel = 1000 * (rob_state.fwd_vel + rob_state.ang_vel) / MAXSPEED;
     r_wheel = 1000 * (rob_state.fwd_vel - rob_state.ang_vel) / MAXSPEED;
-    l_wheel = floor(checkLimits(l_wheel, INPUTLIMIT));
-    r_wheel = floor(checkLimits(r_wheel, INPUTLIMIT));
-    l_wheel = l_wheel > speed_lim ? speed_lim : l_wheel;
-    r_wheel = r_wheel > speed_lim ? speed_lim : r_wheel;
+    l_wheel = floor(checkLimits(l_wheel, speed_lim));
+    r_wheel = floor(checkLimits(r_wheel, speed_lim));
+    // l_wheel = floor(checkLimits(l_wheel, INPUTLIMIT));
+    // r_wheel = floor(checkLimits(r_wheel, INPUTLIMIT));
     cout << "Sending, Ch1: " << l_wheel << " Ch2: " << r_wheel << endl;
     rob_state.l_vel = l_wheel;
     rob_state.r_vel = r_wheel;
@@ -70,7 +76,6 @@ void getSpeed(void){
 
 bool withinTargetRange(void){
     //check if robot is close to target pose with 0.1 threshold
-    float threshold = 0.1; //[m]
     float delta_x = rob_state.target_x - rob_state.curr_x;
     float delta_y = rob_state.target_y - rob_state.curr_y;
     float distance = sqrtf(powf(delta_x, 2.0) + powf(delta_y, 2.0));
@@ -96,7 +101,7 @@ void getVals(void){
 void odomCallback(const nav_msgs::Odometry&msg){
     rob_state.curr_x = (float) msg.pose.pose.position.x;
     rob_state.curr_y = (float) msg.pose.pose.position.y;
-    rob_state.curr_theta = (float)asin(2 * msg.pose.pose.orientation.z * msg.pose.pose.orientation.w);
+    rob_state.curr_theta = (float) msg.pose.pose.position.z;//(float)asin(2 * msg.pose.pose.orientation.z * msg.pose.pose.orientation.w);
     // cout << rob_state.curr_x << " y:"<<rob_state.curr_y << endl;
 }
 
@@ -109,7 +114,7 @@ int main(int argc, char **argv)
 
     ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("/key", 1000);
     ros::Subscriber sub = n.subscribe("odom1", 50, odomCallback);
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(100);
     int *input;
     std_msgs::Float32MultiArray msg;
     msg.data.resize(2);

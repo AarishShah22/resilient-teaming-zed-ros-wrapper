@@ -7,9 +7,18 @@
 #include <math.h>
 #include <roboteq_motor_controller_driver/roboteq_motor_controller_driver_node.h>
 //for csv
-#include<iostream>
-#include <fstream>
+// #include<iostream>
+// #include <fstream>
 
+float wrapToTwoPi(float angle){
+    if(angle < 0){
+        for(; angle < 0; angle += 2*M_PI);
+    }
+    else if(angle > 2*M_PI){
+        for(; angle > M_2_PI; angle -= 2*M_PI);
+    }
+    return angle;
+}
 
 class Odometry_calc{
 
@@ -256,7 +265,7 @@ void Odometry_calc::update(){
 		    //set the position
 		    odom.pose.pose.position.x = x_final;
 		    odom.pose.pose.position.y = y_final;
-		    odom.pose.pose.position.z = 0.0;
+		    odom.pose.pose.position.z = wrapToTwoPi(theta_final);//0.0;
 		    odom.pose.pose.orientation = odom_quat;
 
 		    //set the velocity
@@ -271,10 +280,9 @@ void Odometry_calc::update(){
 	    	    then = now;
 
 			//for testing
-			float tempTestTheta = (float)asin(2 * odom_quat.z * odom_quat.w);
+			float tempTestTheta = wrapToTwoPi(theta_final);
 			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final << " th=" << tempTestTheta);
 	            ros::spinOnce();
-
 
 		}
 	 else { ; }
