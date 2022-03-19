@@ -85,9 +85,9 @@ Odometry_calc::Odometry_calc(){
 
 	ROS_INFO("Started odometry computing node");
 
-	l_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::leftencoderCb, this);
+	l_wheel_sub = n.subscribe("/hall_count",50, &Odometry_calc::leftencoderCb, this);
 	
-	r_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::rightencoderCb, this);
+	r_wheel_sub = n.subscribe("/hall_count",50, &Odometry_calc::rightencoderCb, this);
 
 
   	odom_pub = n.advertise<nav_msgs::Odometry>("odom1", 50);   

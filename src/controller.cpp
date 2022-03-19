@@ -13,8 +13,8 @@
 // Global variables 
 float threshold = 0.1; //[m]
 float speed = 0.25; //[m/s]
-float Kd = speed/threshold;
-float Ka = 2.4;
+float Kd = 0.2;//speed/threshold;
+float Ka = 0.16;//2.4;
 float Kb = -0.6;
 float speed_lim = 800;
 
@@ -29,7 +29,9 @@ struct rob_state_t{
     float ang_vel;
     float l_vel;
     float r_vel;
-}rob_state;
+};
+
+rob_state_t rob_state;
 
 using namespace std;     // belongs to blocking input mode
 
@@ -41,12 +43,12 @@ float checkLimits(float val, float limit){
 }
 
 float wrapToTwoPi(float angle){
-    if(angle < 0){
-        for(; angle < 0; angle+=2*M_PI);
-    }
-    else if(angle > 2*M_PI){
-        for(; angle > M_2_PI; angle -= 2*M_PI);
-    }
+    while(angle > M_PI) {
+		angle -= 2*M_PI;
+	}
+	while(angle <= -M_PI) {
+		angle += 2*M_PI;
+	}
     return angle;
 }
 void getSpeed(void){
@@ -57,14 +59,14 @@ void getSpeed(void){
     float delta_y = rob_state.target_y - rob_state.curr_y;
     float distance = sqrtf(powf(delta_x, 2.0) + powf(delta_y, 2.0));
     float alpha = wrapToTwoPi(atan2(delta_y, delta_x) - rob_state.curr_theta);
-    float beta = wrapToTwoPi(rob_state.target_theta - rob_state.curr_theta);
+    //float beta = wrapToTwoPi(rob_state.target_theta - rob_state.curr_theta);
 
-    rob_state.fwd_vel = Kd * distance;
-    rob_state.ang_vel = Ka * alpha + Kb * beta;
+    rob_state.fwd_vel = checkLimits(Kd * distance, 0.7 * MAXSPEED);
+    rob_state.ang_vel = checkLimits(Ka * alpha, 0.3 * MAXSPEED); // + Kb * beta;
 
     cout << "Processing fwd_speed: " << rob_state.fwd_vel << " ang_speed: " << rob_state.ang_vel << endl; 
-    l_wheel = 1000 * (rob_state.fwd_vel + rob_state.ang_vel) / MAXSPEED;
-    r_wheel = 1000 * (rob_state.fwd_vel - rob_state.ang_vel) / MAXSPEED;
+    l_wheel = 1000 * (rob_state.fwd_vel - rob_state.ang_vel) / MAXSPEED;
+    r_wheel = 1000 * (rob_state.fwd_vel + rob_state.ang_vel) / MAXSPEED;
     l_wheel = floor(checkLimits(l_wheel, speed_lim));
     r_wheel = floor(checkLimits(r_wheel, speed_lim));
     // l_wheel = floor(checkLimits(l_wheel, INPUTLIMIT));
@@ -80,7 +82,9 @@ bool withinTargetRange(void){
     float delta_y = rob_state.target_y - rob_state.curr_y;
     float distance = sqrtf(powf(delta_x, 2.0) + powf(delta_y, 2.0));
     if(distance < threshold){
-        cout << "Arrived" << endl;
+        printf("Arrived: target (%.3f, %.3f), curr (%.3f, %.3f), delta (%.3f, %.3f), distance %.3f\n", rob_state.target_x, rob_state.target_y,
+              rob_state.curr_x, rob_state.curr_y, delta_x, delta_y, distance);
+        // cout << "Arrived:" << delta_x << "," << delta_y << "," << distance << endl;
         printf("\n");
     }
     return distance < threshold;
@@ -102,7 +106,7 @@ void odomCallback(const nav_msgs::Odometry&msg){
     rob_state.curr_x = (float) msg.pose.pose.position.x;
     rob_state.curr_y = (float) msg.pose.pose.position.y;
     rob_state.curr_theta = (float) msg.pose.pose.position.z;//(float)asin(2 * msg.pose.pose.orientation.z * msg.pose.pose.orientation.w);
-    // cout << rob_state.curr_x << " y:"<<rob_state.curr_y << endl;
+    // ROS_INFO_STREAM("Odom callback x:" << rob_state.curr_x << " y:"<<rob_state.curr_y );
 }
 
 //main
@@ -112,8 +116,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "controller");
     ros::NodeHandle n;
 
-    ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("/key", 1000);
-    ros::Subscriber sub = n.subscribe("odom1", 50, odomCallback);
+    ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("/key", 10);
+    ros::Subscriber sub = n.subscribe("odom1", 10, odomCallback);
     ros::Rate loop_rate(100);
     int *input;
     std_msgs::Float32MultiArray msg;
@@ -136,8 +140,13 @@ int main(int argc, char **argv)
         }
         else if(command == 2){
             getVals();
-            while(ros::ok && !withinTargetRange()){
+            while(ros::ok){
                 getSpeed();
+                // if (withinTargetRange()){
+                //     msg.data = {0.0, 0.0};
+                //     pub.publish(msg);
+                //     break;
+                // }
                 msg.data = {rob_state.l_vel, rob_state.r_vel};
                 pub.publish(msg);
 

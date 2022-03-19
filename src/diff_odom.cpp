@@ -7,16 +7,23 @@
 #include <math.h>
 #include <roboteq_motor_controller_driver/roboteq_motor_controller_driver_node.h>
 //for csv
-// #include<iostream>
-// #include <fstream>
+#include<iostream>
+#include <fstream>
+#include <vector>
 
 float wrapToTwoPi(float angle){
-    if(angle < 0){
-        for(; angle < 0; angle += 2*M_PI);
-    }
-    else if(angle > 2*M_PI){
-        for(; angle > M_2_PI; angle -= 2*M_PI);
-    }
+    // if(angle < 0){
+    //     for(; angle < 0; angle += 2*M_PI);
+    // }
+    // else if(angle > 2*M_PI){
+    //     for(; angle > M_2_PI; angle -= 2*M_PI);
+    // }
+	while(angle > M_PI) {
+		angle -= 2*M_PI;
+	}
+	while(angle <= -M_PI) {
+		angle += 2*M_PI;
+	}
     return angle;
 }
 
@@ -24,6 +31,7 @@ class Odometry_calc{
 
 public:
 	Odometry_calc();
+	~Odometry_calc();
 
 	void spin();
 
@@ -76,6 +84,9 @@ private:
 
 	ros::Time current_time, last_time;
 
+	std::vector<double> x_array_;
+	std::vector<double> y_array_;
+
 
 	void leftencoderCb(const roboteq_motor_controller_driver::channel_values& left_ticks);
 
@@ -84,6 +95,16 @@ private:
 
 	void update();
 };
+
+Odometry_calc::~Odometry_calc(){
+	std::ofstream file_writter;
+	// file_writter.open("example.csv");
+	file_writter.open("/home/mobilebot/Desktop/example.csv");
+	for (size_t i = 0; i < x_array_.size(); i++) {
+		file_writter << x_array_[i] << "," << y_array_[i] << "\n";
+	}
+	file_writter.close();
+}
 
 Odometry_calc::Odometry_calc(){
 
@@ -95,12 +116,12 @@ Odometry_calc::Odometry_calc(){
 	// l_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::leftencoderCb, this);
 	
 	// r_wheel_sub = n.subscribe("/hall_count",1000, &Odometry_calc::rightencoderCb, this);
-	l_wheel_sub = n.subscribe("/encoder_count",1000, &Odometry_calc::leftencoderCb, this);
+	l_wheel_sub = n.subscribe("/encoder_count",10, &Odometry_calc::leftencoderCb, this);
 	
-	r_wheel_sub = n.subscribe("/encoder_count",1000, &Odometry_calc::rightencoderCb, this);
+	r_wheel_sub = n.subscribe("/encoder_count",10, &Odometry_calc::rightencoderCb, this);
 
 
-  	odom_pub = n.advertise<nav_msgs::Odometry>("odom1", 50);   
+  	odom_pub = n.advertise<nav_msgs::Odometry>("odom1", 10);   
   	
 
 
@@ -124,7 +145,7 @@ void Odometry_calc::init_variables()
 	encoder_min =  -65536;
 	encoder_max =  65536;
 
-	rate = 10;
+	rate = 50;
 	
 	double wheel_diam = 0.1524;
 	double ticks_revolution = 1920; //568;
@@ -153,6 +174,8 @@ void Odometry_calc::init_variables()
 	
 	current_time = ros::Time::now();
   	last_time = ros::Time::now();
+
+	x_array_.clear();
 
 }
 
@@ -221,12 +244,14 @@ void Odometry_calc::update(){
 	
 		if ( d != 0){
 
-                	x = cos( th ) * d;
-                	//ROS_INFO_STREAM(x);
-                	y = -sin( th ) * d;
-                	// calculate the final position of the robot
-                	x_final = x_final + ( cos( theta_final ) * x - sin( theta_final ) * y );
-                	y_final = y_final + ( sin( theta_final ) * x + cos( theta_final ) * y );
+                	// x = cos( th ) * d;
+                	// //ROS_INFO_STREAM(x);
+                	// y = -sin( th ) * d;
+                	// // calculate the final position of the robot
+                	// x_final = x_final + ( cos( theta_final ) * x - sin( theta_final ) * y );
+                	// y_final = y_final + ( sin( theta_final ) * x + cos( theta_final ) * y );
+					x_final += d * cos(theta_final + 0.5 * th);
+					y_final += d * sin(theta_final + 0.5 * th);
 
 			}
 
@@ -279,10 +304,13 @@ void Odometry_calc::update(){
 
 	    	    then = now;
 
+			x_array_.push_back(x_final);
+			y_array_.push_back(y_final);
 			//for testing
 			float tempTestTheta = wrapToTwoPi(theta_final);
-			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final << " th=" << tempTestTheta);
+			ROS_INFO_STREAM("x=" << x_final << " y=" << y_final << " theta=" << tempTestTheta);
 	            ros::spinOnce();
+				
 
 		}
 	 else { ; }
