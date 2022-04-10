@@ -55,7 +55,11 @@ int getch(void){
     struct termios oldt;
     struct termios newt;
 
-    //store old settings, and copy to new settings
+    // Store old settings, and copy to new settings
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+
+    // Make required changes and apply the settings
     newt.c_lflag &= ~(ICANON | ECHO);
     newt.c_iflag |= IGNBRK;
     newt.c_iflag &= ~(INLCR | ICRNL | IXON | IXOFF);
@@ -176,7 +180,7 @@ int main(int argc, char **argv)
     while (ros::ok())
     {
         int command = 0;
-        printf("\nKeyboard command: 1, Pose command: 2\n\r");
+        printf("\nKeyboard command: 1, Pose command: 2, Exit: 0\n\r");
         cin >> command;
         if(command == 1){
             printf("'w': Forward \n'a': Turn left \n's':Backward \n'd': Turn right\n");
@@ -194,7 +198,7 @@ int main(int argc, char **argv)
                     rob_state.r_vel = 0;
                     // exit if ctrl-C is pressed
                     if (key == '\x03'){
-                        printf("breaking out\r");
+                        printf("breaking out\r\n");
                         break;
                     }
                 }
@@ -222,6 +226,10 @@ int main(int argc, char **argv)
                 ros::spinOnce();
                 loop_rate.sleep();
             }
+        }
+        else if(command == 0){
+            printf("Quitting program\n");
+            ros::shutdown();
         }
     }
     ros::waitForShutdown();
