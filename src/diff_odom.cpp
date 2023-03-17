@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/Int64.h"
 #include "std_msgs/Int16.h"
 #include <tf/transform_broadcaster.h>
@@ -10,6 +11,7 @@
 #include<iostream>
 #include <fstream>
 #include <vector>
+// #include <sl_zed/Camera.hpp>
 
 float wrapToTwoPi(float angle){
     // if(angle < 0){
@@ -40,6 +42,7 @@ private:
 	ros::Subscriber sub;
 	ros::Subscriber l_wheel_sub;
 	ros::Subscriber r_wheel_sub;
+	ros::Subscriber quat_imu_sub;
 	ros::Publisher odom_pub;
 
 	tf::TransformBroadcaster odom_broadcaster;
@@ -87,6 +90,10 @@ private:
 	std::vector<double> x_array_;
 	std::vector<double> y_array_;
 
+	void imuCallback(const std_msgs::Float32MultiArray::ConstPtr& msg)
+	{
+	  ROS_INFO("I heard: [%s]", msg);
+	}
 
 	void leftencoderCb(const roboteq_motor_controller_driver::channel_values& left_ticks);
 
@@ -119,6 +126,7 @@ Odometry_calc::Odometry_calc(){
 	
 	r_wheel_sub = n.subscribe("/encoder_count",10, &Odometry_calc::rightencoderCb, this);
 
+	quat_imu_sub = n.subscribe("quat_data",10,&Odometry_calc::imuCallback, this);
 
   	odom_pub = n.advertise<nav_msgs::Odometry>("odom1", 10);   
   	
@@ -289,7 +297,7 @@ void Odometry_calc::update(){
 		    //set the position
 		    odom.pose.pose.position.x = x_final;
 		    odom.pose.pose.position.y = y_final;
-		    odom.pose.pose.position.z = wrapToTwoPi(theta_final);//0.0;
+		    // odom.pose.pose.position.z = wrapToTwoPi(theta_final);//0.0;
 		    odom.pose.pose.orientation = odom_quat;
 
 		    //set the velocity
