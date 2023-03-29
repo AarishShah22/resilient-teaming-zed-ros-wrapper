@@ -1,12 +1,14 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
-#include "std_msgs/Float32MultiArray.h"
+// #include "std_msgs/Float32MultiArray.h"
+#include "sensor_msgs/Imu.h"
 #include "std_msgs/Int64.h"
 #include "std_msgs/Int16.h"
 #include <tf/transform_broadcaster.h>
 #include <nav_msgs/Odometry.h>
 #include <math.h>
 #include <roboteq_motor_controller_driver/roboteq_motor_controller_driver_node.h>
+#include <eigen3/Eigen/Geometry>
 //for csv
 #include<iostream>
 #include <fstream>
@@ -42,7 +44,7 @@ private:
 	ros::Subscriber sub;
 	ros::Subscriber l_wheel_sub;
 	ros::Subscriber r_wheel_sub;
-	ros::Subscriber quat_imu_sub;
+	ros::Subscriber imu_data_sub;
 	ros::Publisher odom_pub;
 
 	tf::TransformBroadcaster odom_broadcaster;
@@ -61,6 +63,13 @@ private:
 
 	double left;
 	double right;
+
+	// IMU related variables
+
+	double quat_x;
+	double quat_y;
+	double quat_z;
+	double quat_w;
 
 	double rate;
 
@@ -90,9 +99,13 @@ private:
 	std::vector<double> x_array_;
 	std::vector<double> y_array_;
 
-	void imuCallback(const std_msgs::Float32MultiArray::ConstPtr& msg)
+	void imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 	{
-	  ROS_INFO("I heard: [%s]", msg);
+	  quat_x = msg->orientation.x;
+	  quat_y = msg->orientation.y;
+	  quat_z = msg->orientation.z;
+	  quat_w = msg->orientation.w;
+
 	}
 
 	void leftencoderCb(const roboteq_motor_controller_driver::channel_values& left_ticks);
@@ -126,7 +139,7 @@ Odometry_calc::Odometry_calc(){
 	
 	r_wheel_sub = n.subscribe("/encoder_count",10, &Odometry_calc::rightencoderCb, this);
 
-	quat_imu_sub = n.subscribe("quat_data",10,&Odometry_calc::imuCallback, this);
+	imu_data_sub = n.subscribe("/imu/data",10, &Odometry_calc::imuCallback, this);
 
   	odom_pub = n.advertise<nav_msgs::Odometry>("odom1", 10);   
   	
@@ -152,7 +165,7 @@ void Odometry_calc::init_variables()
 	encoder_min =  -65536;
 	encoder_max =  65536;
 
-	rate = 50;
+	rate = 2;
 	
 	double wheel_diam = 0.1524;
 	double ticks_revolution = 1920; //568;
@@ -242,7 +255,19 @@ void Odometry_calc::update(){
 		// ROS_INFO_STREAM(d_left << " : " << d_right);
 
 
-		th = ( d_right - d_left ) / base_width;
+		Eigen::Quaterniond q;
+		q.x() = quat_x;
+		q.y() = quat_y;
+		q.z() = quat_z;
+		q.w() = quat_w;
+
+
+		// std::cout << "R=" << std::endl << q.normalized().toRotationMatrix() << std::endl;
+		// std::cout << "1st=" << q.normalized().toRotationMatrix()(0,0);
+
+		th = asin(q.normalized().toRotationMatrix()(0,2));
+
+		// th = ( d_right - d_left ) / base_width;
 		
 		dx = d /elapsed;
 
@@ -257,22 +282,25 @@ void Odometry_calc::update(){
                 	// // calculate the final position of the robot
                 	// x_final = x_final + ( cos( theta_final ) * x - sin( theta_final ) * y );
                 	// y_final = y_final + ( sin( theta_final ) * x + cos( theta_final ) * y );
-					x_final += d * cos(theta_final + 0.5 * th);
-					y_final += d * sin(theta_final + 0.5 * th);
+					x_final += d * cos(theta_final);
+					y_final += d * sin(theta_final);
 
 			}
 
-           	 if( th != 0)
-                	theta_final = theta_final + th;
+           	 // if( th != 0)
+             //    	theta_final = theta_final + th;
+
+			theta_final = th;
 
 		    geometry_msgs::Quaternion odom_quat ;
 
-		    odom_quat.x = 0.0;
-		    odom_quat.y = 0.0;
-		    odom_quat.z = 0.0;
+		    odom_quat.x = quat_x;
+		    odom_quat.y = quat_y;
+		    odom_quat.z = quat_z;
+		    odom_quat.w = quat_w;
 
-            	    odom_quat.z = sin( theta_final / 2 );	
-            	    odom_quat.w = cos( theta_final / 2 );
+            	    // odom_quat.z = sin( theta_final / 2 );	
+            	    // odom_quat.w = cos( theta_final / 2 );
 
 		    //first, we'll publish the transform over tf
 		    geometry_msgs::TransformStamped odom_trans;

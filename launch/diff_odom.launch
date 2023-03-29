@@ -1,10 +1,9 @@
 <launch>
 
-
-<node name = "diff_odom" pkg = "roboteq_motor_controller_driver" type = "diff_odom" output = "screen">
-
-
+<node name = "pub_imu_data" pkg = "zed_wrapper" type = "pub_imu_data.py" output = "screen">
 </node>
 
+<node name = "diff_odom" pkg = "roboteq_motor_controller_driver" type = "diff_odom" output = "screen">
+</node>
  
 </launch>
