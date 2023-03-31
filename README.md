@@ -49,7 +49,12 @@ Remember to always clean the cache of your catkin workspace before compiling wit
 
 ### Run the ZED wrapper
 
-To launch the ZED node use
+To launch the ZED node, first source the workspace:
+
+    $ cd ~/catkin_ws
+    $ source devel/setup.bash
+
+Then, according to your camera, launch the ZED node:
 
 ZED camera:
 
