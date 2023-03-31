@@ -1,20 +1,10 @@
-![](./images/Picto+STEREOLABS_Black.jpg)
+<!-- ![](./images/Picto+STEREOLABS_Black.jpg) -->
 
-# Stereolabs ZED Camera - ROS Noetic Ninjemis Integration
+# Resilient Teaming Project - ROS Wrapper for ZED stereocamera
 
-This package lets you use the ZED stereo camera with ROS. It outputs the camera left and right images, depth map, point cloud, pose information and supports the use of multiple ZED cameras.
+This is the ROS wrapper for using the ZED stereocamera with the robots for the Resilient Teaming Project with the Barton Research Group at the University of Michigan.
 
-[More information](https://www.stereolabs.com/documentation/guides/using-zed-with-ros/introduction.html)
-
-**Note:** The `zed_interfaces` package has been removed from this repository and moved to its own [`zed-ros-interfaces` repository](https://github.com/stereolabs/zed-ros-interfaces) for allowing better integration of the ZED Wrapper on remote ground stations that do not require the full package to be installed. To update your repository please follow the [new update instructions](https://github.com/stereolabs/zed-ros-wrapper#update-the-repository). For more information please read issue [#750](https://github.com/stereolabs/zed-ros-wrapper/issues/750).
-
-## Getting started
-
-- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com/developers/)
-- [Install](#build-the-program) the ZED ROS wrapper
-- For more information, check out our [ROS documentation](https://www.stereolabs.com/documentation/guides/using-zed-with-ros/introduction.html). If you want to customize the wrapper, check the [ZED API documentation](https://www.stereolabs.com/developers/documentation/API/)
-
-### Prerequisites
+## Prerequisites
 
 - Ubuntu 20.04
 - [ZED SDK **≥ 3.8**](https://www.stereolabs.com/developers/) and its dependency [CUDA](https://developer.nvidia.com/cuda-downloads)
@@ -26,32 +16,17 @@ or
 - [ZED SDK **≥ 3.8**](https://www.stereolabs.com/developers/) and its dependency [CUDA](https://developer.nvidia.com/cuda-downloads)
 - [ROS Melodic](http://wiki.ros.org/melodic/Installation/Ubuntu)
 
-### Build the repository
+## Getting started
 
-The zed_ros_wrapper is a catkin package. It depends on the following ROS packages:
+- First, download the latest version of the ZED SDK on [stereolabs.com](https://www.stereolabs.com/developers/)
+- Install the ZED ROS wrapper
 
-   - nav_msgs
-   - tf2_geometry_msgs
-   - message_runtime
-   - catkin
-   - roscpp
-   - stereo_msgs
-   - rosconsole
-   - robot_state_publisher
-   - urdf
-   - sensor_msgs
-   - image_transport
-   - roslint
-   - diagnostic_updater
-   - dynamic_reconfigure
-   - tf2_ros
-   - message_generation
-   - nodelet
+### Installing the ZED ROS wrapper
 
 Open a terminal, clone the repository, update the dependencies and build the packages:
 
     $ cd ~/catkin_ws/src
-    $ git clone --recursive https://github.com/stereolabs/zed-ros-wrapper.git
+    $ git clone --recursive https://github.com/AarishShah22/resilient-teaming-zed-ros-wrapper.git
     $ cd ../
     $ rosdep install --from-paths src --ignore-src -r -y
     $ catkin_make -DCMAKE_BUILD_TYPE=Release
@@ -61,7 +36,7 @@ Open a terminal, clone the repository, update the dependencies and build the pac
 
 To update the repository to the latest release you must use the following command to retrieve the latest commits of `zed-ros-wrapper` and of all the submodules:
 
-    $ git checkout master # if you are not on the main branch  
+    $ git checkout main # if you are not on the main branch  
     $ git pull --recurse-submodules # update recursively all the submodules
 
 Remember to always clean the cache of your catkin workspace before compiling with the `catkin_make` command to be sure that everything will work as expected:
@@ -96,7 +71,7 @@ ZED2i camera:
  
      $ roslaunch zed_wrapper zed.launch serial_number:=1010 #replace 1010 with the actual SN
 
-### Rviz visualization
+<!-- ### Rviz visualization
 Example launch files to start a pre-configured Rviz environment to visualize the data of ZED, ZED Mini and ZED 2 cameras are provided in the [`zed-ros-examples` repository](https://github.com/stereolabs/zed-ros-examples/tree/master/zed_display_rviz)
     
 ### SVO recording
@@ -145,4 +120,4 @@ A few tutorials are provided to understand how to use the ZED node in the ROS en
  - [Tracking subscription tutorial](https://github.com/stereolabs/zed-ros-examples/tree/master/tutorials/zed_tracking_sub_tutorial/README.md) 
  - [Sensors data subscription tutorial](https://github.com/stereolabs/zed-ros-examples/blob/master/tutorials/zed_sensors_sub_tutorial/README.md) 
  - [Object detection subscription tutorial](https://github.com/stereolabs/zed-ros-examples/blob/master/tutorials/zed_obj_det_sub_tutorial/README.md) 
-
+ -->
