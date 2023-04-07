@@ -265,7 +265,33 @@ void Odometry_calc::update(){
 		// std::cout << "R=" << std::endl << q.normalized().toRotationMatrix() << std::endl;
 		// std::cout << "1st=" << q.normalized().toRotationMatrix()(0,0);
 
-		th = asin(q.normalized().toRotationMatrix()(0,2));
+		// auto euler = q.normalized().toRotationMatrix().eulerAngles(0,1,2);
+		// std::cout << "Euler" << std::endl<<euler <<std::endl;
+
+		Eigen::Matrix3d R1;
+		R1 << cos(15*M_PI/180),0,sin(15*M_PI/180),
+			  0, 1, 0,
+			  -sin(15*M_PI/180),0, cos(15*M_PI/180);
+
+		Eigen::Matrix3d R2;
+		R2 << 1,0,0,
+			  0, 0, -1,
+			  0,1,0;
+
+		Eigen::Matrix3d R3;
+		R3 << 0,0,-1,
+			  0, 1, 0,
+			  1,0,0;
+
+		auto R_from_quat = q.normalized().toRotationMatrix();
+
+		auto R_final = R1*R2*R3*R_from_quat;
+
+		th = -M_PI/2-atan2(R_final(0,2),R_final(0,0));
+		if (th<=-M_PI){
+			th+=2*M_PI;
+		}
+
 
 		// th = ( d_right - d_left ) / base_width;
 		
